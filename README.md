@@ -87,3 +87,10 @@ Then you can generate more tiles and re-train the model for more-accurate future
 
 * Original inspiration from [tensorflow_chessbot](https://github.com/Elucidation/tensorflow_chessbot) by [Elucidation](https://github.com/Elucidation)
 * Neural network architecture from https://www.tensorflow.org/tutorials/images/cnn
+
+## Workflow
+* Add chessboard images to subfolders in ./images/chessboards/ folder, like ./images/chessboards/asdfasbd/FEN.png
+* Run ./generate_tiles.py - this file will breakdown the chessboard images and save squares into ./images/tiles/asdfasbd/FEN/a1_1.png
+* Run ./train.py - this file will generate the neural network model in ./nn, in keras format.
+* Run app.py - this will open FastAPI backend to generate FEN using image received from front end. Default port is localhost:8000
+* Open index.html - copy chess board image to this and generate FEN.
