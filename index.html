@@ -307,9 +307,9 @@
             </div>
 
             <div class="buttons">
-                <button class="btn" onclick="flipBoard()">🔄 Generate Flipped FEN (Black Bottom)</button>
-                <button class="btn btn-secondary" onclick="swapColors()">⚫⚪ Swap Piece Colors</button>
-                <button class="btn" onclick="openLichess()">🔗 Open in Lichess</button>
+                <button class="btn" id="flipBtn">🔄 Generate Flipped FEN (Black Bottom)</button>
+                <button class="btn btn-secondary" id="swapColorsBtn">⚫⚪ Swap Piece Colors</button>
+                <button class="btn" id="lichessBtn">🔗 Open in Lichess</button>
             </div>
         </div>
     </div>
@@ -657,6 +657,99 @@
             }
         }
 
+        function swapColors() {
+            console.log('Before swap - unflippedFEN (will be saved):', unflippedFEN);
+            
+            // Swap all piece colors
+            currentSquares.forEach(square => {
+                const piece = square.piece;
+                if (piece !== '1') {
+                    square.piece = piece === piece.toUpperCase() 
+                        ? piece.toLowerCase() 
+                        : piece.toUpperCase();
+                }
+            });
+            
+            // Reverse the board
+            currentSquares.reverse();
+            
+            // Update square names
+            const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+            const ranks = ['8', '7', '6', '5', '4', '3', '2', '1'];
+            
+            currentSquares.forEach((square, index) => {
+                const rank_idx = Math.floor(index / 8);
+                const file_idx = index % 8;
+                square.square = files[file_idx] + ranks[rank_idx];
+            });
+            
+            // Generate swapped FEN manually (DON'T call updateFENFromSquares!)
+            let fen = '';
+            for (let rank = 0; rank < 8; rank++) {
+                let emptyCount = 0;
+                for (let file = 0; file < 8; file++) {
+                    const piece = currentSquares[rank * 8 + file].piece;
+                    if (piece === '1') {
+                        emptyCount++;
+                    } else {
+                        if (emptyCount > 0) {
+                            fen += emptyCount;
+                            emptyCount = 0;
+                        }
+                        fen += piece;
+                    }
+                }
+                if (emptyCount > 0) {
+                    fen += emptyCount;
+                }
+                if (rank < 7) fen += '/';
+            }
+            fen += ' w KQkq - 0 1';
+            
+            currentFEN = fen;
+            
+            console.log('After swap - currentFEN (swapped):', currentFEN);
+            console.log('After swap - unflippedFEN (UNCHANGED, will be saved):', unflippedFEN);
+            
+            // Update displays
+            document.getElementById('originalFenDisplay').textContent = currentFEN;
+            
+            // Reset flip state
+            isBoardFlipped = false;
+            document.getElementById('flippedFenContainer').style.display = 'none';
+            
+            // Update board position
+            if (board !== null) {
+                let position = '';
+                for (let rank = 0; rank < 8; rank++) {
+                    let emptyCount = 0;
+                    for (let file = 0; file < 8; file++) {
+                        const piece = currentSquares[rank * 8 + file].piece;
+                        if (piece === '1') {
+                            emptyCount++;
+                        } else {
+                            if (emptyCount > 0) {
+                                position += emptyCount;
+                                emptyCount = 0;
+                            }
+                            position += piece;
+                        }
+                    }
+                    if (emptyCount > 0) {
+                        position += emptyCount;
+                    }
+                    if (rank < 7) position += '/';
+                }
+                
+                board.position(position);
+                
+                // Re-add confidence badges
+                setTimeout(() => {
+                    addConfidenceBadges(currentSquares);
+                }, 100);
+            }
+        }
+
         function showLoading(show) {
             document.getElementById('loading').classList.toggle('visible', show);
             document.getElementById('pasteArea').style.display = show ? 'none' : 'block';
@@ -671,6 +764,13 @@
         function hideError() {
             document.getElementById('error').classList.remove('visible');
         }
+
+        // Add button event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('flipBtn').addEventListener('click', flipBoard);
+            document.getElementById('swapColorsBtn').addEventListener('click', swapColors);
+            document.getElementById('lichessBtn').addEventListener('click', openLichess);
+        });
     </script>
 </body>
 </html>

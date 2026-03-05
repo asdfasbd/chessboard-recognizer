@@ -20,12 +20,12 @@ def _img_filename_prefix(chessboard_img_path):
     """ part of the image filename that shows which piece is on which square:
         RRqpBnNr-QKPkrQPK-PpbQnNB1-nRRBpNpk-Nqprrpqp-kKKbNBPP-kQnrpkrn-BKRqbbBp
     """
-    return chessboard_img_path.split("/")[4][:-4]
+    return chessboard_img_path.split("/")[-1][:-4]
 
 def _img_sub_dir(chessboard_img_path):
     """ The sub-directory where the chessboard tile images will be saved
     """
-    sub_dir = chessboard_img_path.split("/")[3]
+    sub_dir = chessboard_img_path.split("/")[-2]
     return os.path.join(TILES_DIR, sub_dir)
 
 def _img_save_dir(chessboard_img_path):
@@ -71,18 +71,39 @@ def generate_tiles_from_all_chessboards():
     num_skipped = 0
     num_failed = 0
     for i, chessboard_img_path in enumerate(chessboard_img_filenames):
-        print("%3d/%d %s" % (i + 1, num_chessboards, chessboard_img_path))
-        img_save_dir = _img_save_dir(chessboard_img_path)
+    
+        # Split path into directory and filename
+        directory = os.path.dirname(chessboard_img_path)
+        filename = os.path.basename(chessboard_img_path)
+        
+        # Expand digits only in filename
+        temp_str = ''
+        for char in filename:
+            if char.isdigit():
+                temp_str += '1' * int(char)
+            else:
+                temp_str += char
+        
+        # Reconstruct full path with new filename
+        new_path = os.path.join(directory, temp_str)
+        
+        # Rename file
+        os.rename(chessboard_img_path, new_path)
+        chessboard_img_filenames[i] = new_path
+        
+
+        print("%3d/%d %s" % (i + 1, num_chessboards, new_path))
+        img_save_dir = _img_save_dir(new_path)
         if os.path.exists(img_save_dir) and not OVERWRITE:
             print("\tIgnoring existing {}\n".format(img_save_dir))
             num_skipped += 1
             continue
-        tiles = get_chessboard_tiles(chessboard_img_path, use_grayscale=USE_GRAYSCALE)
+        tiles = get_chessboard_tiles(new_path, use_grayscale=USE_GRAYSCALE)
         if len(tiles) != 64:
             print("\t!! Expected 64 tiles. Got {}\n".format(len(tiles)))
             num_failed += 1
             continue
-        save_tiles(tiles, chessboard_img_path)
+        save_tiles(tiles, new_path)
         num_success += 1
     print(
         'Processed {} chessboard images ({} generated, {} skipped, {} failed)'.format(

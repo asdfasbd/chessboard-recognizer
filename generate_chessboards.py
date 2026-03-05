@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
 import os
+import time
 from urllib import request
+from urllib.error import URLError, HTTPError
 from io import BytesIO
 
 import numpy as np
@@ -38,7 +40,29 @@ def generate_random_chessboards(n, img_url_template, fen_chars=FEN_CHARS) -> Non
             fen_param = "".join(fen_arr)
         img_url = img_url_template.format(fen_param)
         print(img_url)
-        img = PIL.Image.open(BytesIO(request.urlopen(img_url).read()))
+        
+        # Retry logic for network requests
+        max_retries = 3
+        retry_delay = 2
+        img = None
+        for attempt in range(max_retries):
+            try:
+                response = request.urlopen(img_url, timeout=10)
+                img = PIL.Image.open(BytesIO(response.read()))
+                break
+            except (URLError, HTTPError) as e:
+                print(f"Attempt {attempt + 1}/{max_retries} failed: {e}")
+                if attempt < max_retries - 1:
+                    time.sleep(retry_delay)
+                else:
+                    print(f"Failed to fetch image after {max_retries} attempts. Skipping...")
+                    continue
+            except Exception as e:
+                print(f"Error processing image: {e}")
+                continue
+        
+        if img is None:
+            continue
         if "chessdiagram.online" in img_url_template:
             # need to flip FEN file order since the rows are 1-8 vs 8-1 of normal FEN.
             fen_arr = np.hstack(np.split(fen_arr, 8)[::-1])
